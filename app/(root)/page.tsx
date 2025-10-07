@@ -14,12 +14,12 @@ async function Home() {
   const user = await getCurrentUser();
 
   const [userInterviews, allInterview] = await Promise.all([
-    getInterviewsByUserId(user?.id!),
-    getLatestInterviews({ userId: user?.id! }),
+    user?.id ? getInterviewsByUserId(user.id) : Promise.resolve(null),
+    getLatestInterviews({ userId: user?.id || "" }),
   ]);
 
-  const hasPastInterviews = userInterviews?.length! > 0;
-  const hasUpcomingInterviews = allInterview?.length! > 0;
+  const hasPastInterviews = (userInterviews?.length || 0) > 0;
+  const hasUpcomingInterviews = (allInterview?.length || 0) > 0;
 
   return (
     <>
@@ -49,7 +49,7 @@ async function Home() {
 
         <div className="interviews-section">
           {hasPastInterviews ? (
-            userInterviews?.map((interview) => (
+            (userInterviews || []).map((interview) => (
               <InterviewCard
                 key={interview.id}
                 userId={user?.id}
@@ -71,7 +71,7 @@ async function Home() {
 
         <div className="interviews-section">
           {hasUpcomingInterviews ? (
-            allInterview?.map((interview) => (
+            (allInterview || []).map((interview) => (
               <InterviewCard
                 key={interview.id}
                 userId={user?.id}
