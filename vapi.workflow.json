@@ -1,0 +1,206 @@
+{
+  "name": "prep-mock-interview",
+  "nodes": [
+    {
+      "name": "introduction",
+      "type": "conversation",
+      "isStart": true,
+      "metadata": {
+        "position": {
+          "x": -1511.3034198499215,
+          "y": -674.1562454797418
+        }
+      },
+      "prompt": "Greet the user. Inform them that you will get some information from them, to create a perfect interview. Ask the caller for data required to extract. Ask the questions one by one, and await an answer",
+      "model": {
+        "model": "gemini-2.0-flash-thinking-exp",
+        "provider": "google",
+        "maxTokens": 250,
+        "temperature": 0.3
+      },
+      "variableExtractionPlan": {
+        "output": [
+          {
+            "enum": [],
+            "type": "string",
+            "title": "level",
+            "description": "The job experience level"
+          },
+          {
+            "enum": [],
+            "type": "number",
+            "title": "amount",
+            "description": "How many questions would you like to generate?"
+          },
+          {
+            "enum": [],
+            "type": "string",
+            "title": "techstack",
+            "description": "A list of technologies to cover during the job interview. For example, React, Next.js, Express.js, Node and so on… "
+          },
+          {
+            "enum": [],
+            "type": "string",
+            "title": "role",
+            "description": "What role should would you like to train for? For example Frontend, Backend, Fullstack, Design, UX? "
+          },
+          {
+            "enum": [],
+            "type": "string",
+            "title": "type",
+            "description": "What type of the interview should it be?"
+          }
+        ]
+      },
+      "messagePlan": {
+        "firstMessage": "Hey there!"
+      },
+      "toolIds": []
+    },
+    {
+      "name": "apiRequest_1759845130138",
+      "type": "tool",
+      "metadata": {
+        "position": {
+          "x": -53.56885699324067,
+          "y": -632.1636405401179
+        }
+      },
+      "tool": {
+        "url": "https://prep-mock-psi.vercel.app/api/vapi/generate",
+        "body": {
+          "type": "object",
+          "required": [
+            "role",
+            "level",
+            "userid",
+            "type",
+            "techstack",
+            "amount"
+          ],
+          "properties": {
+            "role": {
+              "type": "string",
+              "default": "{{ role }}",
+              "description": ""
+            },
+            "type": {
+              "type": "string",
+              "default": "{{type}}",
+              "description": ""
+            },
+            "level": {
+              "type": "string",
+              "default": "{{level}}",
+              "description": ""
+            },
+            "amount": {
+              "type": "number",
+              "default": "{{amount}}",
+              "description": ""
+            },
+            "userid": {
+              "type": "string",
+              "default": "{{userid}}",
+              "description": ""
+            },
+            "techstack": {
+              "type": "string",
+              "default": "{{techstack}}",
+              "description": ""
+            }
+          }
+        },
+        "name": "getUserData",
+        "type": "apiRequest",
+        "method": "POST",
+        "function": {
+          "name": "api_request_tool",
+          "parameters": {
+            "type": "object",
+            "required": [],
+            "properties": {}
+          },
+          "description": "API request tool"
+        },
+        "messages": [
+          {
+            "type": "request-start",
+            "content": "Please hold on.",
+            "blocking": true
+          },
+          {
+            "type": "request-failed",
+            "content": "Ooops! something went wrong,please try again",
+            "endCallAfterSpokenEnabled": true
+          },
+          {
+            "role": "assistant",
+            "type": "request-complete",
+            "content": "your interview has been generated,than you for call! bye!",
+            "endCallAfterSpokenEnabled": true
+          }
+        ],
+        "variableExtractionPlan": {
+          "schema": {
+            "type": "object",
+            "required": [],
+            "properties": {}
+          },
+          "aliases": []
+        }
+      }
+    },
+    {
+      "name": "hangup_1759847126576",
+      "type": "tool",
+      "metadata": {
+        "position": {
+          "x": -584.7109803487157,
+          "y": 72.56169271928286
+        }
+      },
+      "tool": {
+        "type": "endCall",
+        "function": {
+          "name": "untitled_tool",
+          "parameters": {
+            "type": "object",
+            "required": [],
+            "properties": {}
+          }
+        },
+        "messages": [
+          {
+            "type": "request-start",
+            "content": "I'll redirect you to the dashboad now.",
+            "blocking": true
+          }
+        ]
+      }
+    }
+  ],
+  "edges": [
+    {
+      "from": "introduction",
+      "to": "apiRequest_1759845130138",
+      "condition": {
+        "type": "ai",
+        "prompt": "What type of the interview should it be?"
+      }
+    },
+    {
+      "from": "apiRequest_1759845130138",
+      "to": "hangup_1759847126576",
+      "condition": {
+        "type": "ai",
+        "prompt": "if user provided all the data to be extracted."
+      }
+    }
+  ],
+  "voice": {
+    "voiceId": "Hana",
+    "provider": "vapi"
+  },
+  "globalPrompt": ""
+}
