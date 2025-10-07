@@ -95,31 +95,64 @@ export async function getLatestInterviews(
 ): Promise<Interview[] | null> {
   const { userId, limit = 20 } = params;
 
-  const interviews = await db
+  // Avoid composite index requirement by fetching finalized items,
+  // filtering out the current user's interviews, then sorting/limiting in memory.
+  const snapshot = await db
     .collection("interviews")
-    .orderBy("createdAt", "desc")
     .where("finalized", "==", true)
-    .where("userId", "!=", userId)
-    .limit(limit)
     .get();
 
-  return interviews.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  })) as Interview[];
+  const toTimestampMs = (value: unknown): number => {
+    // Support Firestore Timestamp, Date, or ISO string
+    // @ts-expect-error - runtime shape checks
+    if (value && typeof value === "object" && typeof value.toDate === "function") {
+      // Firestore Timestamp
+      // @ts-expect-error - timestamp has toDate
+      return value.toDate().getTime();
+    }
+    if (value instanceof Date) return value.getTime();
+    if (typeof value === "string") {
+      const ms = Date.parse(value);
+      return Number.isNaN(ms) ? 0 : ms;
+    }
+    return 0;
+  };
+
+  const interviews = snapshot.docs
+    .map((doc) => ({ id: doc.id, ...doc.data() }))
+    .filter((i: any) => i.userId !== userId)
+    .sort((a: any, b: any) => toTimestampMs(b.createdAt) - toTimestampMs(a.createdAt))
+    .slice(0, limit) as Interview[];
+
+  return interviews;
 }
 
 export async function getInterviewsByUserId(
   userId: string
 ): Promise<Interview[] | null> {
-  const interviews = await db
+  // Avoid composite index requirement by removing orderBy and sorting in memory.
+  const snapshot = await db
     .collection("interviews")
     .where("userId", "==", userId)
-    .orderBy("createdAt", "desc")
     .get();
 
-  return interviews.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  })) as Interview[];
+  const toTimestampMs = (value: unknown): number => {
+    // @ts-expect-error - runtime shape checks
+    if (value && typeof value === "object" && typeof value.toDate === "function") {
+      // @ts-expect-error - timestamp has toDate
+      return value.toDate().getTime();
+    }
+    if (value instanceof Date) return value.getTime();
+    if (typeof value === "string") {
+      const ms = Date.parse(value);
+      return Number.isNaN(ms) ? 0 : ms;
+    }
+    return 0;
+  };
+
+  const interviews = snapshot.docs
+    .map((doc) => ({ id: doc.id, ...doc.data() }))
+    .sort((a: any, b: any) => toTimestampMs(b.createdAt) - toTimestampMs(a.createdAt)) as Interview[];
+
+  return interviews;
 }
